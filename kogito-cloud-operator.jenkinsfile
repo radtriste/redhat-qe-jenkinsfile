@@ -5,7 +5,7 @@ pipeline {
     
     environment {
         WORKING_DIR = "kogito-cloud-operator"
-        GO_ENV_FILE = "${WORKSPACE}/.go-env"
+        ENV_FILE = "${WORKSPACE}/.env"
     }
     
     stages {
@@ -49,15 +49,17 @@ pipeline {
                     installGo()
                     installOperatorSDK()
                     installOpenshiftClient()
+                    installMaven()
                     
                     sh """
-                        . ${GO_ENV_FILE}
+                        . ${ENV_FILE}
                         
                         go version
                         hg version
                         python2 --version
                         operator-sdk version
                         oc version
+                        mvn --version
                     """
                 }
             }
@@ -67,7 +69,7 @@ pipeline {
             steps {
                 dir("${WORKING_DIR}") {
                     sh """
-                        . ${GO_ENV_FILE}
+                        . ${ENV_FILE}
                         make image_builder=podman
                     """
                 }
@@ -78,7 +80,7 @@ pipeline {
             steps {
                 dir("${WORKING_DIR}") {
                     sh """
-                        . ${GO_ENV_FILE}
+                        . ${ENV_FILE}
                         make build-cli
                     """
                 }
@@ -109,7 +111,7 @@ pipeline {
                         # Log into OpenShift so kubeconfig file is created
                         oc login ${OPENSHIFT_API_URL} -u ${OPENSHIFT_USER} -p \${OPENSHIFT_PASSWORD} --insecure-skip-tls-verify
 
-                        . ${GO_ENV_FILE}
+                        . ${ENV_FILE}
                         
                         make run-smoke-tests ci="${NAMESPACE_PREFIX}-smoke" concurrent=${CONCURRENT_TESTS} tags="${TEST_TAGS}" operator_image=${getOperatorImageName()} operator_tag=${getOperatorImageTag()} maven_mirror=${MAVEN_MIRROR_URL} build_image_version=${BUILD_IMAGE_VERSION} services_image_version=${SERVICES_IMAGE_VERSION} examples_uri=${EXAMPLES_URI} examples_ref=${EXAMPLES_REF} load_factor=${LOAD_FACTOR} keep_namespace=${KEEP_NAMESPACE}
                     """   
@@ -137,7 +139,7 @@ pipeline {
                         # Log into OpenShift so kubeconfig file is created
                         oc login ${OPENSHIFT_API_URL} -u ${OPENSHIFT_USER} -p \${OPENSHIFT_PASSWORD} --insecure-skip-tls-verify
                         
-                        . ${GO_ENV_FILE}
+                        . ${ENV_FILE}
                         
                         make run-tests ci=${NAMESPACE_PREFIX} concurrent=${CONCURRENT_TESTS} tags="${TEST_TAGS}" operator_image=${getOperatorImageName()} operator_tag=${getOperatorImageTag()} maven_mirror=${MAVEN_MIRROR_URL} build_image_version=${BUILD_IMAGE_VERSION} services_image_version=${SERVICES_IMAGE_VERSION} examples_uri=${EXAMPLES_URI} examples_ref=${EXAMPLES_REF} load_factor=${LOAD_FACTOR} keep_namespace=${KEEP_NAMESPACE}
                     """   
@@ -223,27 +225,27 @@ void installGo(){
 
     // Set go env variables into env file
     sh '''
-        rm -rf ${GO_ENV_FILE}
+        rm -rf ${ENV_FILE}
 
-        echo \"export GOROOT=${WORKSPACE}/go\" >> ${GO_ENV_FILE}
+        echo \"export GOROOT=${WORKSPACE}/go\" >> ${ENV_FILE}
 
         mkdir -p ${WORKSPACE}/go-${GO_VERSION}
         mkdir -p ${WORKSPACE}/go-${GO_VERSION}/.cache
         
-        echo \"export GOCACHE=${WORKSPACE}/go-${GO_VERSION}/.cache\" >> ${GO_ENV_FILE}
-        echo \"export GOPATH=${WORKSPACE}/go-${GO_VERSION}\" >> ${GO_ENV_FILE}
+        echo \"export GOCACHE=${WORKSPACE}/go-${GO_VERSION}/.cache\" >> ${ENV_FILE}
+        echo \"export GOPATH=${WORKSPACE}/go-${GO_VERSION}\" >> ${ENV_FILE}
         
-        . ${GO_ENV_FILE}
+        . ${ENV_FILE}
         
-        echo 'export PATH=\${PATH}:\${GOROOT}/bin' >> ${GO_ENV_FILE}
-        echo 'export PATH=\${PATH}:\${GOPATH}/bin' >> ${GO_ENV_FILE}
+        echo 'export PATH=\${PATH}:\${GOROOT}/bin' >> ${ENV_FILE}
+        echo 'export PATH=\${PATH}:\${GOPATH}/bin' >> ${ENV_FILE}
         
-        cat ${GO_ENV_FILE}
+        cat ${ENV_FILE}
     '''
 
     // Install Go dependencies
     sh """
-        . ${GO_ENV_FILE}
+        . ${ENV_FILE}
         export GO111MODULE=on
         go get github.com/gobuffalo/packr/v2/packr2
         go get -u golang.org/x/lint/golint
@@ -276,5 +278,18 @@ void installOpenshiftClient(){
         wget \${PACKAGE_URL}
         tar xzf ./\${PACKAGE_NAME}
         mv oc \${OSE_CLIENT_DIR}
+    """
+}
+
+void installMaven(){
+    sh """       
+        rm -rf \$HOME/bin/maven
+        RELEASE_VERSION=3.6.3
+        curl -LO https://mirrors.ircam.fr/pub/apache/maven/maven-3/\${RELEASE_VERSION}/binaries/apache-maven-\${RELEASE_VERSION}-bin.tar.gz
+        tar xzf apache-maven-\${RELEASE_VERSION}-bin.tar.gz
+        
+        echo \"export MVN_HOME=${WORKSPACE}/apache-maven-\${RELEASE_VERSION}\" >> ${ENV_FILE}
+        . ${ENV_FILE}
+        echo 'export PATH=\${PATH}:\${MVN_HOME}/bin' >> ${ENV_FILE}
     """
 }
