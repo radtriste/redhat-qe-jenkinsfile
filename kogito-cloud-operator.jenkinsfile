@@ -27,7 +27,6 @@ pipeline {
                 sh "rm -rf ${WORKING_DIR} && mkdir -p ${WORKING_DIR}"
                 dir("${WORKING_DIR}") {
                     git url: "${REPOSITORY_URL}", branch: "${REPOSITORY_BRANCH}"
-                    sh "ls -al"
                 }
             }
         }
@@ -171,7 +170,9 @@ pipeline {
             }
         }
         always {
-            deleteDir()
+            dir("${WORKING_DIR}") {
+                deleteDir()
+            }
         }
     }
 }
