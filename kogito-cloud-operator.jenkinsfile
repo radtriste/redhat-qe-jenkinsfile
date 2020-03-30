@@ -86,6 +86,18 @@ pipeline {
             }
         }
 
+        stage("Deploy operator image"){
+            steps {
+                dir("${WORKING_DIR}") {                    
+                    sh """                        
+                        podman login -u="${REGISTRY_USER}" -p="\${REGISTRY_PASSWORD}" ${IMAGE_REGISTRY}
+                        podman tag \${getOperatorBuiltImageTaggedName()} \${getOperatorImageTaggedName()}
+                        podman push \${getOperatorImageTaggedName()}
+                    """
+                }
+            }
+        }
+
         stage("Run smoke tests"){
             when {
                 expression {
@@ -97,23 +109,10 @@ pipeline {
                     sh """
                         # Log into OpenShift so kubeconfig file is created
                         oc login \${OPENSHIFT_API_URL} -u \${OPENSHIFT_USER} -p \${OPENSHIFT_PASSWORD} --insecure-skip-tls-verify
-                        podman login -u="\${REGISTRY_USER}" -p="\${REGISTRY_PASSWORD}" \${IMAGE_REGISTRY}
-                    """
-                    
-                    sh """
+
                         . ${GO_ENV_FILE}
                         
-                        BUILD=`echo \$RANDOM`
-                        export IMAGE_NAME=\${IMAGE_REGISTRY}/\${IMAGE_GROUP}/kogito-cloud-operator
-                        echo 'Image to use: \${IMAGE_NAME}:\${BUILD}'
-                        
-                        BUILT_IMAGE=`cat deploy/operator.yaml | grep image: | awk -F':' '{print \$2\":\"\$3}' | tr -d ' '`
-                        echo 'BUILT_IMAGE = \${BUILT_IMAGE}'
-                        
-                        podman tag \${BUILT_IMAGE} \${IMAGE_NAME}:\${BUILD}
-                        podman push \${IMAGE_NAME}:\${BUILD}
-                        
-                        make run-smoke-tests ci="\${NAMESPACE_PREFIX}-smoke" concurrent=\${CONCURRENT_TESTS} tags="\${TEST_TAGS}" operator_image=\${IMAGE_NAME} operator_tag=\${BUILD} maven_mirror=\${MAVEN_MIRROR_URL} build_image_version=\${BUILD_IMAGE_VERSION} services_image_version=\${SERVICES_IMAGE_VERSION} examples_uri=\${EXAMPLES_URI} examples_ref=\${EXAMPLES_REF} load_factor=\${LOAD_FACTOR} keep_namespace=${KEEP_NAMESPACE}
+                        make run-smoke-tests ci="\${NAMESPACE_PREFIX}-smoke" concurrent=\${CONCURRENT_TESTS} tags="\${TEST_TAGS}" operator_image=\${getOperatorImageName()} operator_tag=\${getOperatorImageTag()} maven_mirror=\${MAVEN_MIRROR_URL} build_image_version=\${BUILD_IMAGE_VERSION} services_image_version=\${SERVICES_IMAGE_VERSION} examples_uri=\${EXAMPLES_URI} examples_ref=\${EXAMPLES_REF} load_factor=\${LOAD_FACTOR} keep_namespace=${KEEP_NAMESPACE}
                     """   
                 }
             }
@@ -138,23 +137,10 @@ pipeline {
                     sh """
                         # Log into OpenShift so kubeconfig file is created
                         oc login \${OPENSHIFT_API_URL} -u \${OPENSHIFT_USER} -p \${OPENSHIFT_PASSWORD} --insecure-skip-tls-verify
-                        podman login -u="\${REGISTRY_USER}" -p="\${REGISTRY_PASSWORD}" \${IMAGE_REGISTRY}
-                    """
-                    
-                    sh """
+                        
                         . ${GO_ENV_FILE}
                         
-                        BUILD=`echo \$RANDOM`
-                        export IMAGE_NAME=\${IMAGE_REGISTRY}/\${IMAGE_GROUP}/kogito-cloud-operator
-                        echo 'Image to use: \${IMAGE_NAME}:\${BUILD}'
-                        
-                        BUILT_IMAGE=`cat deploy/operator.yaml | grep image: | awk -F':' '{print \$2\":\"\$3}' | tr -d ' '`
-                        echo 'BUILT_IMAGE = \${BUILT_IMAGE}'
-                        
-                        podman tag \${BUILT_IMAGE} \${IMAGE_NAME}:\${BUILD}
-                        podman push \${IMAGE_NAME}:\${BUILD}
-                        
-                        make run-tests ci=\${NAMESPACE_PREFIX} concurrent=\${CONCURRENT_TESTS} tags="\${TEST_TAGS}" operator_image=\${IMAGE_NAME} operator_tag=\${BUILD} maven_mirror=\${MAVEN_MIRROR_URL} build_image_version=\${BUILD_IMAGE_VERSION} services_image_version=\${SERVICES_IMAGE_VERSION} examples_uri=\${EXAMPLES_URI} examples_ref=\${EXAMPLES_REF} load_factor=\${LOAD_FACTOR} keep_namespace=${KEEP_NAMESPACE}
+                        make run-tests ci=\${NAMESPACE_PREFIX} concurrent=\${CONCURRENT_TESTS} tags="\${TEST_TAGS}" operator_image=\${getOperatorImageName()} operator_tag=\${getOperatorImageTag()} maven_mirror=\${MAVEN_MIRROR_URL} build_image_version=\${BUILD_IMAGE_VERSION} services_image_version=\${SERVICES_IMAGE_VERSION} examples_uri=\${EXAMPLES_URI} examples_ref=\${EXAMPLES_REF} load_factor=\${LOAD_FACTOR} keep_namespace=${KEEP_NAMESPACE}
                     """   
                 }
             }
@@ -201,6 +187,22 @@ void setBuildDisplayName(){
         displayName += " (${TEST_TAGS})"
     }
     currentBuild.displayName = displayName
+}
+
+String getOperatorBuiltImageTaggedName() {
+    return sh(script: "cat deploy/operator.yaml | grep image: | awk -F':' '{print \$2\":\"\$3}' | tr -d ' '", returnStdout: true).trim()
+}
+
+String getOperatorImageTaggedName() {
+    return "${getOperatorImageName()}:${getOperatorImageTag()}"
+}
+
+String getOperatorImageName() {
+    return "${IMAGE_REGISTRY}/${IMAGE_GROUP}/kogito-cloud-operator"
+}
+
+String getOperatorImageTag(){
+    return env.PULL_REQUEST != '' ? "PR-${PULL_REQUEST}" : "${REPOSITORY_BRANCH}"
 }
 
 void sendMail(){
