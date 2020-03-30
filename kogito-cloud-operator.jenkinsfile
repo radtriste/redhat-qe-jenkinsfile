@@ -13,7 +13,7 @@ pipeline {
             steps{
                 script {
                     sh """
-                        podman login -u="\${REGISTRY_USER}" -p="\${REGISTRY_PASSWORD}" \${IMAGE_REGISTRY}
+                        podman login -u="${REGISTRY_USER}" -p="\${REGISTRY_PASSWORD}" ${IMAGE_REGISTRY}
                     """
                     
                     // Calculate build display name
@@ -91,8 +91,8 @@ pipeline {
                 dir("${WORKING_DIR}") {                    
                     sh """                        
                         podman login -u="${REGISTRY_USER}" -p="\${REGISTRY_PASSWORD}" ${IMAGE_REGISTRY}
-                        podman tag \${getOperatorBuiltImageTaggedName()} \${getOperatorImageTaggedName()}
-                        podman push \${getOperatorImageTaggedName()}
+                        podman tag ${getOperatorBuiltImageTaggedName()} ${getOperatorImageTaggedName()}
+                        podman push ${getOperatorImageTaggedName()}
                     """
                 }
             }
@@ -108,11 +108,11 @@ pipeline {
                 dir("${WORKING_DIR}") {
                     sh """
                         # Log into OpenShift so kubeconfig file is created
-                        oc login \${OPENSHIFT_API_URL} -u \${OPENSHIFT_USER} -p \${OPENSHIFT_PASSWORD} --insecure-skip-tls-verify
+                        oc login ${OPENSHIFT_API_URL} -u ${OPENSHIFT_USER} -p \${OPENSHIFT_PASSWORD} --insecure-skip-tls-verify
 
                         . ${GO_ENV_FILE}
                         
-                        make run-smoke-tests ci="\${NAMESPACE_PREFIX}-smoke" concurrent=\${CONCURRENT_TESTS} tags="\${TEST_TAGS}" operator_image=\${getOperatorImageName()} operator_tag=\${getOperatorImageTag()} maven_mirror=\${MAVEN_MIRROR_URL} build_image_version=\${BUILD_IMAGE_VERSION} services_image_version=\${SERVICES_IMAGE_VERSION} examples_uri=\${EXAMPLES_URI} examples_ref=\${EXAMPLES_REF} load_factor=\${LOAD_FACTOR} keep_namespace=${KEEP_NAMESPACE}
+                        make run-smoke-tests ci="${NAMESPACE_PREFIX}-smoke" concurrent=${CONCURRENT_TESTS} tags="${TEST_TAGS}" operator_image=${getOperatorImageName()} operator_tag=${getOperatorImageTag()} maven_mirror=${MAVEN_MIRROR_URL} build_image_version=${BUILD_IMAGE_VERSION} services_image_version=${SERVICES_IMAGE_VERSION} examples_uri=${EXAMPLES_URI} examples_ref=${EXAMPLES_REF} load_factor=${LOAD_FACTOR} keep_namespace=${KEEP_NAMESPACE}
                     """   
                 }
             }
@@ -136,11 +136,11 @@ pipeline {
                 dir("${WORKING_DIR}") {
                     sh """
                         # Log into OpenShift so kubeconfig file is created
-                        oc login \${OPENSHIFT_API_URL} -u \${OPENSHIFT_USER} -p \${OPENSHIFT_PASSWORD} --insecure-skip-tls-verify
+                        oc login ${OPENSHIFT_API_URL} -u ${OPENSHIFT_USER} -p \${OPENSHIFT_PASSWORD} --insecure-skip-tls-verify
                         
                         . ${GO_ENV_FILE}
                         
-                        make run-tests ci=\${NAMESPACE_PREFIX} concurrent=\${CONCURRENT_TESTS} tags="\${TEST_TAGS}" operator_image=\${getOperatorImageName()} operator_tag=\${getOperatorImageTag()} maven_mirror=\${MAVEN_MIRROR_URL} build_image_version=\${BUILD_IMAGE_VERSION} services_image_version=\${SERVICES_IMAGE_VERSION} examples_uri=\${EXAMPLES_URI} examples_ref=\${EXAMPLES_REF} load_factor=\${LOAD_FACTOR} keep_namespace=${KEEP_NAMESPACE}
+                        make run-tests ci=${NAMESPACE_PREFIX} concurrent=${CONCURRENT_TESTS} tags="${TEST_TAGS}" operator_image=${getOperatorImageName()} operator_tag=${getOperatorImageTag()} maven_mirror=${MAVEN_MIRROR_URL} build_image_version=${BUILD_IMAGE_VERSION} services_image_version=${SERVICES_IMAGE_VERSION} examples_uri=${EXAMPLES_URI} examples_ref=${EXAMPLES_REF} load_factor=${LOAD_FACTOR} keep_namespace=${KEEP_NAMESPACE}
                     """   
                 }
             }
