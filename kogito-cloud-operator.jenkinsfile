@@ -23,6 +23,9 @@ pipeline {
                     if (params.JAVA_HOME != "") {
                         env.JAVA_HOME = params.JAVA_HOME
                     }
+
+                    // load default variable
+                    loadDefaultConfigIfNeeded()
                 }
             }
         }
@@ -180,6 +183,17 @@ pipeline {
             dir("${WORKING_DIR}") {
                 deleteDir()
             }
+        }
+    }
+}
+
+void loadDefaultConfigIfNeeded(){
+    def props = readProperties file: "${WORKING_DIR}/test/.pipeline_default_config"
+    keys= props.keySet()
+    for(key in keys) {
+        value = props["${key}"]
+        if (env."${key}" == "") {
+            env."${key}" = "${value}"
         }
     }
 }
