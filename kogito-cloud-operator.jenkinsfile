@@ -18,6 +18,11 @@ pipeline {
                     
                     // Calculate build display name
                     setBuildDisplayName()
+                    
+                    // Temporary fix until java is set to version 11 by default
+                    if (params.JAVA_HOME != "") {
+                        env.JAVA_HOME = params.JAVA_HOME
+                    }
                 }
             }
         }
