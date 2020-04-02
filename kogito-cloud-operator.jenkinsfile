@@ -290,7 +290,7 @@ void installMaven(){
     sh """       
         rm -rf \$HOME/bin/maven
         RELEASE_VERSION=3.6.3
-        curl -LO https://mirrors.ircam.fr/pub/apache/maven/maven-3/\${RELEASE_VERSION}/binaries/apache-maven-\${RELEASE_VERSION}-bin.tar.gz
+        curl -LO https://mirrors.ocf.berkeley.edu/apache/maven/maven-3/\${RELEASE_VERSION}/binaries/apache-maven-\${RELEASE_VERSION}-bin.tar.gz
         tar xzf apache-maven-\${RELEASE_VERSION}-bin.tar.gz
         
         echo \"export MVN_HOME=${WORKSPACE}/apache-maven-\${RELEASE_VERSION}\" >> ${ENV_FILE}
