@@ -23,9 +23,6 @@ pipeline {
                     if (params.JAVA_HOME != "") {
                         env.JAVA_HOME = params.JAVA_HOME
                     }
-
-                    // load default variable
-                    loadDefaultConfigIfNeeded()
                 }
             }
         }
@@ -51,6 +48,7 @@ pipeline {
                 }
             }
         }
+
         stage("Setup node") {
             steps {
                 script {
@@ -115,6 +113,8 @@ pipeline {
             }
             steps {
                 dir("${WORKING_DIR}") {
+                    loadTestDefaultConfig()
+
                     sh """
                         # Log into OpenShift so kubeconfig file is created
                         oc login ${OPENSHIFT_API_URL} -u ${OPENSHIFT_USER} -p \${OPENSHIFT_PASSWORD} --insecure-skip-tls-verify
@@ -143,6 +143,8 @@ pipeline {
             }
             steps {
                 dir("${WORKING_DIR}") {
+                    loadTestDefaultConfig()
+
                     sh """
                         # Log into OpenShift so kubeconfig file is created
                         oc login ${OPENSHIFT_API_URL} -u ${OPENSHIFT_USER} -p \${OPENSHIFT_PASSWORD} --insecure-skip-tls-verify
@@ -187,13 +189,17 @@ pipeline {
     }
 }
 
-void loadDefaultConfigIfNeeded(){
+// load test default config if there is no env or param defined
+void loadTestDefaultConfig(){
     def props = readProperties file: "${WORKING_DIR}/test/.pipeline_default_config"
     keys= props.keySet()
     for(key in keys) {
         value = props["${key}"]
-        if (env."${key}" == "") {
+        if (env."${key}" == "" && params."${key}" == "") {
             env."${key}" = "${value}"
+        } else {
+            val = env."${key}" != "" ? env."${key}" : params."${key}"
+            echo "${key} exists already, value = ${val}"
         }
     }
 }
