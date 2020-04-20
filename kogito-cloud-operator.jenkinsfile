@@ -18,11 +18,6 @@ pipeline {
                     
                     // Calculate build display name
                     setBuildDisplayName()
-                    
-                    // Temporary fix until java is set to version 11 by default
-                    if (params.JAVA_HOME != "") {
-                        env.JAVA_HOME = params.JAVA_HOME
-                    }
                 }
             }
         }
@@ -65,7 +60,12 @@ pipeline {
                         python2 --version
                         operator-sdk version
                         oc version
+                        
+                        echo \$JAVA_HOME
+                        echo \$GRAALVM_HOME
+                        
                         java -version
+                        native-image --version
                         mvn --version
                     """
                 }
@@ -289,16 +289,18 @@ void installOpenshiftClient(){
 }
 
 void installGraalVMWithNative(){
+    echo "installGraalVMWithNative"
     sh """       
-        rm -rf \$HOME/
+        rm -rf ${WORKSPACE}/graalvm*
         RELEASE_VERSION=19.3.1
         curl -LO https://github.com/graalvm/graalvm-ce-builds/releases/download/vm-\${RELEASE_VERSION}/graalvm-ce-java11-linux-amd64-\${RELEASE_VERSION}.tar.gz
+        echo "hello"
         tar xzf graalvm-ce-java11-linux-amd64-\${RELEASE_VERSION}.tar.gz
         
         echo \"export GRAALVM_HOME=${WORKSPACE}/graalvm-ce-java11-\${RELEASE_VERSION}\" >> ${ENV_FILE}
         echo \"export JAVA_HOME=${WORKSPACE}/graalvm-ce-java11-\${RELEASE_VERSION}\" >> ${ENV_FILE}
         . ${ENV_FILE}
-        echo 'export PATH=\${PATH}:\${GRAALVM_HOME}/bin' >> ${ENV_FILE}
+        echo 'export PATH=\${GRAALVM_HOME}/bin:\${PATH}' >> ${ENV_FILE}
         . ${ENV_FILE}
 
         gu install native-image
