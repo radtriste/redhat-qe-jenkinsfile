@@ -72,95 +72,95 @@ pipeline {
             }
         }
         
-        // stage("Build operator image"){
-        //     steps {
-        //         dir("${WORKING_DIR}") {
-        //             sh """
-        //                 . ${ENV_FILE}
-        //                 make image_builder=podman
-        //             """
-        //         }
-        //     }
-        // }
+        stage("Build operator image"){
+            steps {
+                dir("${WORKING_DIR}") {
+                    sh """
+                        . ${ENV_FILE}
+                        make image_builder=podman
+                    """
+                }
+            }
+        }
         
-        // stage("Build CLI"){
-        //     steps {
-        //         dir("${WORKING_DIR}") {
-        //             sh """
-        //                 . ${ENV_FILE}
-        //                 make build-cli
-        //             """
-        //         }
-        //     }
-        // }
+        stage("Build CLI"){
+            steps {
+                dir("${WORKING_DIR}") {
+                    sh """
+                        . ${ENV_FILE}
+                        make build-cli
+                    """
+                }
+            }
+        }
 
-        // stage("Deploy operator image"){
-        //     steps {
-        //         dir("${WORKING_DIR}") {                    
-        //             sh """                        
-        //                 podman login -u="${REGISTRY_USER}" -p="\${REGISTRY_PASSWORD}" ${IMAGE_REGISTRY}
-        //                 podman tag ${getOperatorBuiltImageTaggedName()} ${getOperatorImageTaggedName()}
-        //                 podman push ${getOperatorImageTaggedName()}
-        //             """
-        //         }
-        //     }
-        // }
+        stage("Deploy operator image"){
+            steps {
+                dir("${WORKING_DIR}") {                    
+                    sh """                        
+                        podman login -u="${REGISTRY_USER}" -p="\${REGISTRY_PASSWORD}" ${IMAGE_REGISTRY}
+                        podman tag ${getOperatorBuiltImageTaggedName()} ${getOperatorImageTaggedName()}
+                        podman push ${getOperatorImageTaggedName()}
+                    """
+                }
+            }
+        }
 
-        // stage("Run smoke tests"){
-        //     when {
-        //         expression {
-        //             return !params.SKIP_SMOKE;
-        //         }
-        //     }
-        //     steps {
-        //         dir("${WORKING_DIR}") {
-        //             sh """
-        //                 # Log into OpenShift so kubeconfig file is created
-        //                 oc login ${OPENSHIFT_API_URL} -u ${OPENSHIFT_USER} -p \${OPENSHIFT_PASSWORD} --insecure-skip-tls-verify
+        stage("Run smoke tests"){
+            when {
+                expression {
+                    return !params.SKIP_SMOKE;
+                }
+            }
+            steps {
+                dir("${WORKING_DIR}") {
+                    sh """
+                        # Log into OpenShift so kubeconfig file is created
+                        oc login ${OPENSHIFT_API_URL} -u ${OPENSHIFT_USER} -p \${OPENSHIFT_PASSWORD} --insecure-skip-tls-verify
 
-        //                 . ${ENV_FILE}
+                        . ${ENV_FILE}
                         
-        //                 make run-smoke-tests load_default_config=true ci="${NAMESPACE_PREFIX}-smoke" concurrent=${CONCURRENT_TESTS} tags="${TEST_TAGS}" operator_image=${getOperatorImageName()} operator_tag=${getOperatorImageTag()} maven_mirror=${MAVEN_MIRROR_URL} build_image_version=${BUILD_IMAGE_VERSION} services_image_version=${SERVICES_IMAGE_VERSION} examples_uri=${EXAMPLES_URI} examples_ref=${EXAMPLES_REF} load_factor=${LOAD_FACTOR} keep_namespace=${KEEP_NAMESPACE}
-        //             """   
-        //         }
-        //     }
-        //     post {
-        //         always {
-        //             dir("${WORKING_DIR}") {
-        //                 archiveArtifacts artifacts: 'test/logs/smoke/**/*.log', allowEmptyArchive: true
-        //                 junit testResults: 'test/logs/smoke/junit.xml', allowEmptyResults: true
-        //             }
-        //         }
-        //     }
-        // }
+                        make run-smoke-tests load_default_config=true ci="${NAMESPACE_PREFIX}-smoke" concurrent=${CONCURRENT_TESTS} tags="${TEST_TAGS}" operator_image=${getOperatorImageName()} operator_tag=${getOperatorImageTag()} maven_mirror=${MAVEN_MIRROR_URL} build_image_version=${BUILD_IMAGE_VERSION} services_image_version=${SERVICES_IMAGE_VERSION} examples_uri=${EXAMPLES_URI} examples_ref=${EXAMPLES_REF} load_factor=${LOAD_FACTOR} keep_namespace=${KEEP_NAMESPACE}
+                    """   
+                }
+            }
+            post {
+                always {
+                    dir("${WORKING_DIR}") {
+                        archiveArtifacts artifacts: 'test/logs/smoke/**/*.log', allowEmptyArchive: true
+                        junit testResults: 'test/logs/smoke/junit.xml', allowEmptyResults: true
+                    }
+                }
+            }
+        }
         
-        // stage("Run Full tests"){
-        //     when {
-        //         expression {
-        //             return !params.SKIP_FULL;
-        //         }
-        //     }
-        //     steps {
-        //         dir("${WORKING_DIR}") {
-        //             sh """
-        //                 # Log into OpenShift so kubeconfig file is created
-        //                 oc login ${OPENSHIFT_API_URL} -u ${OPENSHIFT_USER} -p \${OPENSHIFT_PASSWORD} --insecure-skip-tls-verify
+        stage("Run Full tests"){
+            when {
+                expression {
+                    return !params.SKIP_FULL;
+                }
+            }
+            steps {
+                dir("${WORKING_DIR}") {
+                    sh """
+                        # Log into OpenShift so kubeconfig file is created
+                        oc login ${OPENSHIFT_API_URL} -u ${OPENSHIFT_USER} -p \${OPENSHIFT_PASSWORD} --insecure-skip-tls-verify
                         
-        //                 . ${ENV_FILE}
+                        . ${ENV_FILE}
                         
-        //                 make run-tests load_default_config=true ci=${NAMESPACE_PREFIX} concurrent=${CONCURRENT_TESTS} tags="${TEST_TAGS}" operator_image=${getOperatorImageName()} operator_tag=${getOperatorImageTag()} maven_mirror=${MAVEN_MIRROR_URL} build_image_version=${BUILD_IMAGE_VERSION} services_image_version=${SERVICES_IMAGE_VERSION} examples_uri=${EXAMPLES_URI} examples_ref=${EXAMPLES_REF} load_factor=${LOAD_FACTOR} keep_namespace=${KEEP_NAMESPACE}
-        //             """   
-        //         }
-        //     }
-        //     post {
-        //         always {
-        //             dir("${WORKING_DIR}") {
-        //                 archiveArtifacts artifacts: 'test/logs/full/**/*.log', allowEmptyArchive: true
-        //                 junit testResults: 'test/logs/full/junit.xml', allowEmptyResults: true
-        //             }
-        //         }
-        //     }
-        // }
+                        make run-tests load_default_config=true ci=${NAMESPACE_PREFIX} concurrent=${CONCURRENT_TESTS} tags="${TEST_TAGS}" operator_image=${getOperatorImageName()} operator_tag=${getOperatorImageTag()} maven_mirror=${MAVEN_MIRROR_URL} build_image_version=${BUILD_IMAGE_VERSION} services_image_version=${SERVICES_IMAGE_VERSION} examples_uri=${EXAMPLES_URI} examples_ref=${EXAMPLES_REF} load_factor=${LOAD_FACTOR} keep_namespace=${KEEP_NAMESPACE}
+                    """   
+                }
+            }
+            post {
+                always {
+                    dir("${WORKING_DIR}") {
+                        archiveArtifacts artifacts: 'test/logs/full/**/*.log', allowEmptyArchive: true
+                        junit testResults: 'test/logs/full/junit.xml', allowEmptyResults: true
+                    }
+                }
+            }
+        }
     }
      post {
         unstable {
