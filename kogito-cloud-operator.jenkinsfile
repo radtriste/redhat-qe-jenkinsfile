@@ -54,6 +54,7 @@ pipeline {
                     installGo()
                     installOperatorSDK()
                     installOpenshiftClient()
+                    installGraalVMWithNative()
                     installMaven()
                     
                     sh """
@@ -64,6 +65,7 @@ pipeline {
                         python2 --version
                         operator-sdk version
                         oc version
+                        java -version
                         mvn --version
                     """
                 }
@@ -283,6 +285,23 @@ void installOpenshiftClient(){
         wget \${PACKAGE_URL}
         tar xzf ./\${PACKAGE_NAME}
         mv oc \${OSE_CLIENT_DIR}
+    """
+}
+
+void installGraalVMWithNative(){
+    sh """       
+        rm -rf \$HOME/
+        RELEASE_VERSION=19.3.1
+        curl -LO https://github.com/graalvm/graalvm-ce-builds/releases/download/vm-\${RELEASE_VERSION}/graalvm-ce-java11-linux-amd64-\${RELEASE_VERSION}.tar.gz
+        tar xzf graalvm-ce-java11-linux-amd64-\${RELEASE_VERSION}.tar.gz
+        
+        echo \"export GRAALVM_HOME=${WORKSPACE}/graalvm-ce-java11-\${RELEASE_VERSION}\" >> ${ENV_FILE}
+        echo \"export JAVA_HOME=${WORKSPACE}/graalvm-ce-java11-\${RELEASE_VERSION}\" >> ${ENV_FILE}
+        . ${ENV_FILE}
+        echo 'export PATH=\${PATH}:\${GRAALVM_HOME}/bin' >> ${ENV_FILE}
+        . ${ENV_FILE}
+
+        gu install native-image
     """
 }
 
