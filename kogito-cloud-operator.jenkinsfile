@@ -294,7 +294,6 @@ void installGraalVMWithNative(){
         rm -rf ${WORKSPACE}/graalvm*
         RELEASE_VERSION=19.3.1
         curl -LO https://github.com/graalvm/graalvm-ce-builds/releases/download/vm-\${RELEASE_VERSION}/graalvm-ce-java11-linux-amd64-\${RELEASE_VERSION}.tar.gz
-        echo "hello"
         tar xzf graalvm-ce-java11-linux-amd64-\${RELEASE_VERSION}.tar.gz
         
         echo \"export GRAALVM_HOME=${WORKSPACE}/graalvm-ce-java11-\${RELEASE_VERSION}\" >> ${ENV_FILE}
